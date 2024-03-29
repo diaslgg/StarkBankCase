@@ -25,7 +25,7 @@ Este projeto consiste em uma aplicação desenvolvida em Python, utilizando o fr
 1. Clone este repositório:
 
    ```
-   git clone https://github.com/diaslgg/api_test_starkbank.git
+   git clone https://github.com/diaslgg/StarkBankCase.git
    ```
 
 2. Instale as dependências:
