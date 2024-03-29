@@ -23,7 +23,7 @@ models.Base.metadata.create_all(bind=engine)
 db_dependency = Annotated[Session, Depends(get_db)]
 
 
-@app.post("/")
+@app.post("/invoice")
 async def webhook_invoice(payload: RequestPayload, db: db_dependency):
     """
     Webhook endpoint to receive all data from starkbank programed events
