@@ -1,52 +1,36 @@
-import os
-from functools import lru_cache
-from dotenv import load_dotenv
+from typing import Annotated
 from fastapi import FastAPI, Depends
 import ssl
-
-from typing_extensions import Annotated
-
+from src.sql.database import engine
 from src.models.invoice import RequestPayload
-from src.operations.transfer import Transfer
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from src.operations.transfer_opp import TransferOpp
+from sqlalchemy.orm import Session
+from src.sql import models
+from src.sql.operations import DatabaseOpp
+from src.sql.config import get_db
 
 
-class Settings(BaseSettings):
-    private_key: str
-    project_id: str
-    type_of_environment: str
-
-    model_config = SettingsConfigDict(env_file=".env")
-
-
-settings = Settings()
 app = FastAPI()
 
+# https certificate and private key
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain('../../httpsPrivateKey/cert.pem',
-                            keyfile='../../httpsPrivateKey/key.pem')
+ssl_context.load_cert_chain('../httpsKeys/cert.pem',
+                            keyfile='../httpsKeys/key.pem')
 
 
-@lru_cache
-def get_settings():
-    return Settings()
+models.Base.metadata.create_all(bind=engine)
 
-
-@app.get("/info")
-async def info(settings: Annotated[Settings, Depends(get_settings)]):
-    return {
-        "private_key": settings.private_key,
-        "project_id": settings.project_id,
-        "type_of_environment": settings.type_of_environment
-    }
+db_dependency = Annotated[Session, Depends(get_db)]
 
 
 @app.post("/")
-async def webhook_invoice(payload: RequestPayload):
+async def webhook_invoice(payload: RequestPayload, db: db_dependency):
+    """
+    Webhook endpoint to receive all data from starkbank programed events
+    :param payload:
+    :param db:
+    :return:
+    """
     if payload.event.log.type == "credited":
-        type_of_endpoint = get_settings().type_of_environment
-        project_id = get_settings().project_id
-        private_key = settings.private_key
-
-
-        Transfer.make_standard_transfer(payload.event.log.invoice, type_of_endpoint, project_id, private_key)
+        transfer = TransferOpp.make_standard_transfer(payload.event.log.invoice)
+        DatabaseOpp.create_transfer(db, transfer[0])

@@ -1,9 +1,9 @@
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-from starkbank import Split
+from pydantic import BaseModel
 
 
+# BaseModel classes to receive json data from POST endpoint
 class Invoice(BaseModel):
     status: str | None = None
     amount: int | None = None
@@ -19,9 +19,6 @@ class Invoice(BaseModel):
     tax_id: str | None = None
     line: str | None = None
     rules: List[Optional[dict]] | None = None
-    splits: List[Split] | None = None
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class Log(BaseModel):
